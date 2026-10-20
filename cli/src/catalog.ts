@@ -2,7 +2,8 @@
  * Catálogo de especialistas e detecção de tecnologias do projeto.
  */
 
-import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { apiHeaders } from "./github.js";
 import { isFile, pathExists, resolvePath } from "./filesystem.js";
@@ -130,14 +131,15 @@ export class Catalog {
     return resolved;
   }
 
-  /** Detecta entradas por arquivos marcadores e dependências declaradas. */
+  /** Detecta tecnologias na raiz e nos subprojetos, respeitando exclusões Git. */
   async detect(project: string): Promise<CatalogEntryValue[]> {
     const root = resolvePath(project);
-    const dependencies = await readDependencies(root);
+    const roots = await detectionRoots(root);
+    const dependencies = new Set((await Promise.all(roots.map(readDependencies))).flatMap((items) => [...items]));
     const detected: CatalogEntryValue[] = [];
     for (const entry of this.entries) {
       const matches = await Promise.all(
-        entry.files.map((marker) => pathExists(join(root, marker))),
+        roots.flatMap((directory) => entry.files.map((marker) => pathExists(join(directory, marker)))),
       );
       if (
         matches.some(Boolean) ||
@@ -175,4 +177,21 @@ async function readDependencies(project: string): Promise<Set<string>> {
     }
   }
   return dependencies;
+}
+
+/** Visita subprojetos sem seguir symlinks, instalações de skills ou dependências. */
+async function detectionRoots(project: string): Promise<string[]> {
+  const roots: string[] = [project];
+  const ignored = new Set([".git", ".agents", ".claude", ".specify", ".venv", "venv", "node_modules", "vendor", "dist", "build", "coverage", "__pycache__"]);
+  const visit = async (directory: string): Promise<void> => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (!entry.isDirectory() || ignored.has(entry.name) || entry.name.startsWith("venv_")) continue;
+      const child = join(directory, entry.name);
+      if (spawnSync("git", ["check-ignore", "--quiet", "--", child], { cwd: directory }).status === 0) continue;
+      roots.push(child);
+      await visit(child);
+    }
+  };
+  await visit(project);
+  return roots;
 }

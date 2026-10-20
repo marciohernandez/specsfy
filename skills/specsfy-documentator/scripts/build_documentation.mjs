@@ -6,7 +6,7 @@ import { dirname, extname, join, relative, resolve } from "node:path";
 
 const START = "<!-- specsfy:documentator:start -->";
 const END = "<!-- specsfy:documentator:end -->";
-const ignored = new Set([".git", ".venv", "build", "coverage", "dist", "docs", "node_modules", "storage", "vendor"]);
+const ignored = new Set([".git", ".agents", ".claude", ".specify", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules.locked", "build", "coverage", "dist", "docs", "node_modules", "storage", "vendor"]);
 const args = process.argv.slice(2);
 const project = resolve(args.includes("--project") ? args[args.indexOf("--project") + 1] : process.cwd());
 const check = args.includes("--check");
@@ -17,7 +17,7 @@ async function text(path) { try { return await readFile(path, "utf8"); } catch {
 async function walk(folder) {
   const output = [];
   for (const entry of await readdir(folder, { withFileTypes: true })) {
-    if (ignored.has(entry.name)) continue;
+    if (ignored.has(entry.name) || entry.name.startsWith("venv_")) continue;
     const path = join(folder, entry.name);
     if (entry.isDirectory()) output.push(...await walk(path)); else output.push(path);
   }
@@ -37,6 +37,7 @@ function repo(value) {
 }
 function category(path) {
   const value = path.replaceAll("\\", "/");
+  if (/(^|\/)(tests?|spec)\//i.test(value) || /\.(test|spec)\./.test(value)) return "Testes";
   if (/\/(Services?|service)\//i.test(value)) return "Serviços";
   if (/\/(routes|api)\//i.test(value) || /route\.(?:ts|js)$/.test(value)) return "Rotas e APIs";
   if (/\/(pages?|views?|app)\//i.test(value) || /page\.(?:tsx?|jsx?)$/.test(value)) return "Páginas";
@@ -86,14 +87,14 @@ if (!existsSync(project)) {
   }
   const seen = new Set();
   const packages = rows.filter((row) => { const key = `${row[0]}:${row[1]}:${row[2]}:${row[3]}`; if (seen.has(key)) return false; seen.add(key); return true; });
-  const code = files.filter((path) => [".astro", ".css", ".go", ".js", ".jsx", ".php", ".rb", ".rs", ".ts", ".tsx", ".vue"].includes(extname(path)) || path.endsWith(".blade.php"));
+  const code = files.filter((path) => [".astro", ".css", ".go", ".mjs", ".cjs", ".py", ".js", ".jsx", ".php", ".rb", ".rs", ".ts", ".tsx", ".vue"].includes(extname(path)) || path.endsWith(".blade.php"));
   const testFiles = code.filter((path) => category(relative(project, path)) === "Testes");
   const declared = Object.keys({ ...(rootPackage.dependencies ?? {}), ...(rootPackage.devDependencies ?? {}), ...(composer.require ?? {}), ...(composer["require-dev"] ?? {}) });
   const frameworks = [["astro", "Astro"], ["next", "Next.js"], ["react", "React"], ["laravel/framework", "Laravel"]].flatMap(([key, label]) => declared.includes(key) ? [label] : []);
-  const runner = declared.includes("pestphp/pest") ? "Pest" : declared.includes("vitest") ? "Vitest" : "não identificado";
+  const runner = declared.includes("pestphp/pest") ? "Pest" : declared.includes("vitest") ? "Vitest" : declared.includes("phpunit/phpunit") || files.some((path) => /phpunit\.xml(?:\.dist)?$/.test(path)) ? "PHPUnit" : "não identificado";
   const scripts = Object.entries({ ...(rootPackage.scripts ?? {}), ...(composer.scripts ?? {}) }).map(([name, value]) => `${name}: ${typeof value === "string" ? value : "comando composto"}`);
   const applicationRows = [];
-  for (const path of code.slice(0, 250)) {
+  for (const path of code.filter((path) => category(relative(project, path)) !== "Testes")) {
     const local = relative(project, path).replaceAll("\\", "/");
     applicationRows.push([category(local), local, symbols(await text(path)) || "—"]);
   }
@@ -113,6 +114,9 @@ if (!existsSync(project)) {
     "integrations.md": ["Integrações", "## Configuração\n\nValores de ambiente e integrações são documentados apenas pelos nomes declarados localmente, sem segredos."],
     "decisions.md": ["Decisões técnicas", "## Política\n\nDecisões explícitas em `PROJECT.md` e `.specsfy/` prevalecem sobre inferências deste documento."],
   };
+  for (const name of ["architecture.md", "database.md", "flows.md"]) {
+    docData[name][1] = "Os diagramas são exemplos de formato. Eles não representam relações confirmadas da aplicação.\n\n" + docData[name][1];
+  }
   const targets = {...Object.fromEntries(Object.entries(docData).map(([name, [title]]) => [join(project, "docs", name), [title, docData[name][1]]])), [join(project, ".specsfy", "PACKAGES.md")]: ["Pacotes e bibliotecas", `# Pacotes e bibliotecas\n\n${table(["Gerenciador", "Escopo", "Pacote", "Versão", "Finalidade", "Fonte"], packages)}`]};
   const stale = [];
   for (const [path, [title, generated]] of Object.entries(targets)) {

@@ -42,7 +42,7 @@ const NEXT_FOLDERS: Record<SpecFolder, readonly SpecFolder[]> = {
   planned: ["defined", "planned", "in-progress"],
   "in-progress": ["planned", "in-progress", "review"],
   review: ["in-progress", "review", "completed"],
-  completed: ["completed"],
+  completed: ["draft", "defined", "completed"],
 };
 
 const TABLE_STATUS = /^(\|\s*Status\s*\|\s*)([^|]*)(\|\s*)$/imu;
@@ -112,16 +112,22 @@ export async function transitionSpec(
   }
   const status = STATUS_BY_FOLDER[to];
   const content = await readFile(spec.path, "utf8");
-  const updated = updateStatus(content, status);
-  await writeTextAtomic(spec.path, updated);
-
+  const updated = updateResearchPaths(
+    updateStatus(content, status),
+    spec.folder,
+    to,
+    identifier,
+  );
   const targetDirectory = join(resolvePath(project), "specs", to, identifier);
   if (spec.directory !== targetDirectory) {
     if (await pathExists(targetDirectory)) {
       throw new Error(`o destino já contém uma spec: ${targetDirectory}`);
     }
     await mkdir(dirname(targetDirectory), { recursive: true });
+    await writeTextAtomic(spec.path, updated);
     await rename(spec.directory, targetDirectory);
+  } else {
+    await writeTextAtomic(spec.path, updated);
   }
   return {
     identifier,
@@ -266,6 +272,19 @@ function updateStatus(content: string, status: string): string {
   }
   const newline = content.endsWith("\n") ? "" : "\n";
   return `${content}${newline}\n| Status | ${status} |\n`;
+}
+
+/** Mantém o índice de research alinhado à pasta física após a transição. */
+function updateResearchPaths(
+  content: string,
+  from: SpecFolder,
+  to: SpecFolder,
+  identifier: string,
+): string {
+  if (from === to) return content;
+  const source = `specs/${from}/${identifier}/research/`;
+  const target = `specs/${to}/${identifier}/research/`;
+  return content.replaceAll(source, target);
 }
 
 function readTableField(content: string, field: string): string | undefined {

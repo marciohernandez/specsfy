@@ -95,12 +95,12 @@ if (!input || !existsSync(input)) {
   if (!draft && (status === "Draft" || gates.definition !== "Passed")) errors.push("Definition Gate precisa estar Passed para validação estrita.");
   for (const name of ["definition", "plan"]) if (!['Pending', 'Failed', 'Passed'].includes(gates[name])) errors.push(`${name} Gate inválido.`);
   if (!['Pending', 'In Progress', 'Failed', 'Passed'].includes(gates.delivery)) errors.push("Delivery Gate inválido.");
-  for (const title of sections) if (!new RegExp(`^###\\s+(?:\\d+\\.\\s+)?${escape(title)}\\s*$`, "im").test(body)) errors.push(`Heading obrigatório ausente: ${title}.`);
+  for (const title of sections) if (!new RegExp(`^###\\s+(?:\\d+\\.\\s+)?${escape(title)}\\s*$`, "im").test(body) && !(title === "Dependências, riscos e suposições" && /^###\s+(?:16\.\s+)?Dependências, falhas possíveis e suposições\s*$/imu.test(body))) errors.push(`Heading obrigatório ausente: ${title}.`);
   const ids = Object.fromEntries(["US", "FR", "NFR", "AC", "DEC"].map((kind) => [kind, identifiers(body, kind)]));
   for (const kind of ["US", "FR", "NFR", "AC"]) if (!ids[kind].length) errors.push(`Nenhuma definição ${kind}-NNN encontrada.`);
   errors.push(...minimumBddErrors(body));
   if (status === "Complete" && /^\s*-\s+\[ \]\s+T\d{3,}/m.test(body)) errors.push("Status Complete não permite tarefas abertas na seção 14.");
-  if (/\b(?:TODO|TBD|FIXME)\b|\[NEEDS CLARIFICATION/im.test(body) && !(status === "Draft" && draft)) errors.push("Marcadores não resolvidos.");
+  if ((/(?<![\p{L}\p{N}_])(?:TODO|TBD|FIXME)(?![\p{L}\p{N}_])/u.test(body) || /\[NEEDS CLARIFICATION/i.test(body)) && !(status === "Draft" && draft)) errors.push("Marcadores não resolvidos.");
   errors.push(...interfaceErrors(body, status));
   const result = { path, format: field(body, "Formato"), slug, status, gates, counts: Object.fromEntries(Object.entries(ids).map(([key, value]) => [key, value.length])), errors, warnings };
   if (asJson) console.log(JSON.stringify(result, null, 2));

@@ -184,3 +184,75 @@ comandos. Esses contratos não substituem a suíte Pest do produto.
   mesma entrega.
 - Em mudança transversal, registre os comandos focais, a regressão integrada e
   o status Git único.
+
+## Regressões de issues e pull requests
+
+A suíte `skills/tests/github-regressions.test.mjs` executa os scripts Node.js em
+consumidores temporários. Ela confere o resultado do comando e os arquivos
+produzidos, incluindo a preservação de conteúdo humano durante atualizações.
+Execute-a a partir da raiz:
+
+```bash
+node --test skills/tests/github-regressions.test.mjs
+```
+
+O teste `cli/tests/installer-real-cli.test.ts` usa a dependência `skills` instalada
+pelo lock do CLI para materializar especialistas de uma origem local. Ele compara
+os fingerprints e repete a instalação para conferir a idempotência. O teste de
+restauração em `installer.test.ts` simula uma falha após a gravação dos arquivos
+e confere a recuperação das instruções e dos locks anteriores.
+
+Os testes de resolução do Windows injetam a plataforma e os nomes dos arquivos.
+Eles exercitam caminhos com espaços e preservação de argumentos no processo
+Node.js. A execução nativa no Windows continua necessária para conferir o
+comportamento do sistema operacional.
+
+A reprodução do verificador de migrations usa um processo Node.js como substituto
+do PHP. A resposta simulada distingue migrations aplicadas das pendentes e cobre
+a falha da consulta. Esse teste não confirma uma conexão Laravel. O verificador
+consulta `migrate:status` somente após conferir o banco separado e exige uma
+resposta reconhecida para desconsiderar uma migration histórica.
+
+### Contrato de comportamento
+
+Os cenários seguintes orientam as reproduções Node.js. O bloco Gherkin é uma
+referência de comportamento e não cria outro runner de testes.
+
+```gherkin
+# language: pt
+Funcionalidade: Preservar a integridade do consumidor ao operar o Specsfy
+
+  Cenário: Restaurar uma instalação que falhou durante a materialização
+    Dado um consumidor com instruções próprias e templates customizados
+    Quando o instalador delegado grava arquivos e termina com erro
+    Então as instruções e os locks anteriores permanecem íntegros
+    E as skills incompletas não ficam registradas como instaladas
+
+  Cenário: Manter a rastreabilidade da spec ao adicionar testes de outra entrega
+    Dado que a spec declara seus próprios arquivos de teste
+    Quando outra spec usa os mesmos identificadores em arquivos diferentes
+    Então os marcadores adicionais não alteram a cobertura da primeira spec
+
+  Cenário: Preservar uma célula que contém um separador escapado
+    Dado que a tabela de stack contém uma célula com pipe escapado
+    Quando a stack detectada é atualizada
+    Então a linha humana permanece na tabela
+    E outra execução não reescreve o arquivo
+
+  Cenário: Respeitar a fase preliminar de uma spec
+    Dado um consumidor que contém uma spec Draft estruturalmente válida
+    Quando a verificação global examina essa spec
+    Então usa a política de validação Draft
+    E mantém a validação estrita para os outros estados
+
+  Cenário: Distinguir uma migration histórica de uma remoção pendente
+    Dado um banco de teste separado e uma migration que remove coluna
+    Quando a consulta confirma que essa migration já foi aplicada
+    Então a remoção histórica não reprova o avanço de migrations novas
+    Mas uma remoção pendente continua recusada
+    E uma consulta sem resposta reconhecida mantém a execução pendente
+```
+
+## CI de preparação de versão
+
+Branches `release/**` executam o mesmo workflow da `main` para conferir a revisão antes da tag. O job do CLI depende dos jobs integrados, de skills e do exemplo. A publicação npm, restrita a tags, só ocorre depois desses jobs. Os testes Node de regressão também são executados no job integrado.

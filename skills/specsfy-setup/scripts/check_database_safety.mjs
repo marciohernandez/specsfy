@@ -3,6 +3,7 @@
  * estruturas ou registros antes que uma skill execute testes ou migrations.
  */
 
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
@@ -126,16 +127,39 @@ async function inspectLaravelTests() {
   }
 }
 
-/** Recusa migrations com remoção de schema ou limpeza ampla de registros. */
+/** Confere remoções somente nas migrations que o banco separado ainda não executou. */
 async function inspectLaravelMigrations() {
   const migrations = join(project, "database", "migrations");
   if (!existsSync(migrations)) return;
+  const destructive = [];
   for (const path of await regularFiles(migrations)) {
-    const source = await readFile(path, "utf8");
-    const up = migrationMethod(source, "up", "down");
-    if (destructiveMigrationSource.some((pattern) => pattern.test(up))) {
-      ignored.push(`${basename(path)} contém uma alteração que pode apagar dados`);
-    }
+    const up = migrationMethod(await readFile(path, "utf8"), "up", "down");
+    if (destructiveMigrationSource.some((pattern) => pattern.test(up))) destructive.push(path);
+  }
+  if (!destructive.length || errors.length || ignored.length) return;
+  const environments = [...command.matchAll(/--env(?:=|\s+)([\w-]+)/gu)].map((match) => match[1]);
+  if (!environments.length || environments.some((environment) => environment !== "testing") || /--(?:database|path|realpath)\b/u.test(command)) {
+    errors.push("a consulta de migrations exige --env=testing e a conexão e os caminhos padrão");
+    return;
+  }
+  if (existsSync(join(project, "bootstrap", "cache", "config.php"))) {
+    errors.push("o cache de configuração precisa ser reconciliado com o banco de teste para consultar migrations");
+    return;
+  }
+  // Consulta somente leitura, com argumentos fixos. O texto recebido nunca vira código de shell.
+  const status = spawnSync("php", ["artisan", "migrate:status", "--env=testing", "--no-ansi"], {
+    cwd: project, encoding: "utf8", timeout: 15_000, maxBuffer: 1_000_000,
+  });
+  if (status.status !== 0) {
+    errors.push("não foi possível consultar o estado das migrations no banco de teste");
+    return;
+  }
+  for (const path of destructive) {
+    const name = basename(path, ".php");
+    const line = status.stdout.split(/\r?\n/u).find((row) => row.trimStart().startsWith(name + " "));
+    if (line && /\bRan\s*$/u.test(line)) continue;
+    if (line && /\bPending\s*$/u.test(line)) ignored.push(basename(path) + " está pendente e contém uma alteração que pode apagar registros");
+    else errors.push("estado da migration não confirmado: " + basename(path));
   }
 }
 

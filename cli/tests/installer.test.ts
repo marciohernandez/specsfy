@@ -74,6 +74,31 @@ describe("instalador", () => {
     else process.env.SPECSFY_SKILLS_LOG = previousLog;
   });
 
+  test("falha na materialização restaura regras, skills e locks do consumidor", async () => {
+    const root = await temporaryDirectory();
+    const source = join(root, "source");
+    const project = join(root, "consumer");
+    await mkdir(project);
+    await writeFramework(source);
+    await mkdir(join(source, "specsfy-02-backlog"));
+    await writeFile(join(source, "specsfy-02-backlog/SKILL.md"), "skill");
+    await writeFile(join(project, "AGENTS.md"), "# Regras próprias\n");
+    await mkdir(join(project, ".specsfy/templates/custom"), { recursive: true });
+    await writeFile(join(project, ".specsfy/templates/custom/Spec.md"), "customizado");
+    const installer = await SkillInstaller.create(project);
+    const lock = await readFile(join(project, "skills-lock.json"), "utf8");
+    const command = process.env.SPECSFY_NPX_COMMAND!;
+    await writeFile(command, await readFile(command, "utf8") + "\nprocess.exit(17);\n");
+
+    await expect(installer.installBaseFromCheckout(source, ["specsfy-02-backlog"]))
+      .rejects.toThrow("skills CLI falhou");
+    expect(await readFile(join(project, "AGENTS.md"), "utf8")).toBe("# Regras próprias\n");
+    expect(await readFile(join(project, ".specsfy/templates/custom/Spec.md"), "utf8")).toBe("customizado");
+    expect(await readFile(join(project, "skills-lock.json"), "utf8")).toBe(lock);
+    expect(await pathExists(join(project, ".specsfy/Spec.md"))).toBe(false);
+    expect(await pathExists(join(project, ".agents/skills/specsfy-02-backlog"))).toBe(false);
+  });
+
   test("mantém o mapa completo de nomes legados", () => {
     expect(RENAMED_BASE_SKILLS["specsfy-base-discuss"]).toBe(
       "specsfy-02-backlog",

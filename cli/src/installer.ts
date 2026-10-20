@@ -8,6 +8,7 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import {
+  cp,
   lstat,
   mkdir,
   mkdtemp,
@@ -161,12 +162,21 @@ export class SkillInstaller {
   ): Promise<string[]> {
     await this.validateSkillInstallation(checkout, names);
     const legacy = await this.legacyBaseTargets();
-    const changed = await this.installFrameworkFromCheckout(checkout);
-    changed.push(
-      ...(await this.installFromCheckout(checkout, names, "base")),
-      ...(await this.removeLegacyBase(legacy)),
-    );
-    return changed;
+    return withInstallationRollback([
+      join(this.project, ".specsfy"),
+      join(this.project, "AGENTS.md"),
+      join(this.project, "CLAUDE.md"),
+      join(this.project, "skills-lock.json"),
+      ...names.map((name) => join(this.project, ".agents", "skills", name)),
+      ...legacy.map(([, target]) => target),
+    ], async () => {
+      const changed = await this.installFrameworkFromCheckout(checkout);
+      changed.push(
+        ...(await this.installFromCheckout(checkout, names, "base")),
+        ...(await this.removeLegacyBase(legacy)),
+      );
+      return changed;
+    });
   }
 
   /** Publica regras, templates, exemplo e blocos gerenciados. */
@@ -368,49 +378,55 @@ export class SkillInstaller {
       }
       operations.push({ action: "replace", source, target, digest });
     }
-    const changedNames = operations
-      .filter(({ action }) => action !== "current")
-      .map(({ target }) => basename(target));
-    if (changedNames.length) {
-      await installWithSkillsCli(checkout, changedNames, this.project);
-    }
-    const installed: string[] = [];
-    let lockChanged = false;
-    for (const operation of operations) {
-      const name = basename(operation.target);
-      const previous = lock.skills[name] ?? {};
-      if (operation.action !== "current") {
-        if (
-          !(await pathExists(operation.target)) ||
-          (await skillDigest(operation.target)) !== operation.digest
-        ) {
-          throw new Error(
-            `skills CLI não materializou ${name} corretamente em ${operation.target}`,
-          );
+    return withInstallationRollback([
+      join(this.project, ".specsfy", "skills-lock.json"),
+      join(this.project, "skills-lock.json"),
+      ...operations.filter(({ action }) => action !== "current").map(({ target }) => target),
+    ], async () => {
+      const changedNames = operations
+        .filter(({ action }) => action !== "current")
+        .map(({ target }) => basename(target));
+      if (changedNames.length) {
+        await installWithSkillsCli(checkout, changedNames, this.project);
+      }
+      const installed: string[] = [];
+      let lockChanged = false;
+      for (const operation of operations) {
+        const name = basename(operation.target);
+        const previous = lock.skills[name] ?? {};
+        if (operation.action !== "current") {
+          if (
+            !(await pathExists(operation.target)) ||
+            (await skillDigest(operation.target)) !== operation.digest
+          ) {
+            throw new Error(
+              `skills CLI não materializou ${name} corretamente em ${operation.target}`,
+            );
+          }
+          installed.push(operation.target);
         }
-        installed.push(operation.target);
+        if (
+          previous.source === sourceName &&
+          previous.content_sha256 === operation.digest
+        ) {
+          continue;
+        }
+        const now = new Date().toISOString();
+        const record: ManagedRecord = {
+          source: sourceName,
+          installed_at:
+            typeof previous.installed_at === "string" ? previous.installed_at : now,
+          content_sha256: operation.digest,
+        };
+        if (Object.keys(previous).length && operation.action !== "current") {
+          record.updated_at = now;
+        }
+        lock.skills[name] = record;
+        lockChanged = true;
       }
-      if (
-        previous.source === sourceName &&
-        previous.content_sha256 === operation.digest
-      ) {
-        continue;
-      }
-      const now = new Date().toISOString();
-      const record: ManagedRecord = {
-        source: sourceName,
-        installed_at:
-          typeof previous.installed_at === "string" ? previous.installed_at : now,
-        content_sha256: operation.digest,
-      };
-      if (Object.keys(previous).length && operation.action !== "current") {
-        record.updated_at = now;
-      }
-      lock.skills[name] = record;
-      lockChanged = true;
-    }
-    if (lockChanged) await this.writeLock(lock);
-    return installed;
+      if (lockChanged) await this.writeLock(lock);
+      return installed;
+    });
   }
 
   /** Remove somente nomes pertencentes ao Specsfy e protege customizações. */
@@ -771,4 +787,40 @@ function isGenerated(path: string): boolean {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/** Restaura os destinos gerenciados se o processo delegado falhar ou divergir. */
+async function withInstallationRollback<T>(paths: string[], operation: () => Promise<T>): Promise<T> {
+  const backup = await mkdtemp(join(tmpdir(), "specsfy-install-rollback-"));
+  const snapshots: Array<{ target: string; backup: string; existed: boolean }> = [];
+  let retainBackup = false;
+  try {
+    for (const [index, target] of [...new Set(paths)].entries()) {
+      let existed = true;
+      try { await lstat(target); } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        existed = false;
+      }
+      const saved = join(backup, String(index));
+      if (existed) await cp(target, saved, { recursive: true, dereference: false });
+      snapshots.push({ target, backup: saved, existed });
+    }
+    try { return await operation(); } catch (error) {
+      try {
+        for (const snapshot of snapshots) {
+          await rm(snapshot.target, { recursive: true, force: true });
+          if (snapshot.existed) {
+            await mkdir(join(snapshot.target, ".."), { recursive: true });
+            await cp(snapshot.backup, snapshot.target, { recursive: true, dereference: false });
+          }
+        }
+      } catch (restoreError) {
+        retainBackup = true;
+        throw new AggregateError([error, restoreError], `A restauração falhou. Os arquivos anteriores permanecem em ${backup}`);
+      }
+      throw error;
+    }
+  } finally {
+    if (!retainBackup) await rm(backup, { recursive: true, force: true });
+  }
 }

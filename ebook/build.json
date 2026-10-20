@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "version": "0.24.2",
-  "edition": "v0.24.2",
-  "generated_at": "2026-10-20T11:16:03.294Z",
-  "source_sha256": "6e4b908ace61cb24294c3caa65dd3be3e190d508551c19401c425fdf47fa0fc7",
+  "version": "0.24.3",
+  "edition": "v0.24.3",
+  "generated_at": "2026-10-20T18:52:12.562Z",
+  "source_sha256": "6017b338fa4cc6641d32d90f532a1fd768b24536a9ead8bb724c338e6bb9ffc8",
   "sources": [
     ".ebook/build-ebook.sh",
     ".ebook/epub.css",
@@ -63,30 +63,30 @@
     "docs/user/update-spec.md"
   ],
   "document_metadata": {
-    "docs/user/getting-started.md": {
-      "autoridade": "metodologia executável de `skills/`",
-      "escopo": "primeira fatia de trabalho em um projeto consumidor",
-      "natureza": "normativo"
-    },
     "docs/user/installation.md": {
-      "autoridade": "interfaces públicas de `cli/` e `skills/`",
+      "natureza": "normativo",
       "escopo": "instalação do CLI e do framework em um projeto consumidor",
-      "natureza": "normativo"
+      "autoridade": "interfaces públicas de `cli/` e `skills/`"
+    },
+    "docs/user/getting-started.md": {
+      "natureza": "normativo",
+      "escopo": "primeira fatia de trabalho em um projeto consumidor",
+      "autoridade": "metodologia executável de `skills/`"
     },
     "docs/user/milestones.md": {
-      "autoridade": "uso público da capacidade de milestones",
+      "natureza": "guia de uso",
       "escopo": "MVP, roadmap, specs e backlog de projetos consumidores",
-      "natureza": "guia de uso"
+      "autoridade": "uso público da capacidade de milestones"
     }
   },
   "artifacts": {
     "pdf": {
-      "file": "Specsfy-Guia-do-Usuario-v0.24.2.pdf",
-      "sha256": "c5586bb709c7f04c643e18f42914bb3b0832fb60b917136f24209541b4fd17f0"
+      "file": "Specsfy-Guia-do-Usuario-v0.24.3.pdf",
+      "sha256": "eb9cc907d8d5fcdda32f6655e706592e39728c6719b21ba064a4666c1715b2d5"
     },
     "epub": {
-      "file": "Specsfy-Guia-do-Usuario-v0.24.2.epub",
-      "sha256": "2885265524b1f1ba31087a81f80b94e0ab1db887e218fb37d45858eebae80386"
+      "file": "Specsfy-Guia-do-Usuario-v0.24.3.epub",
+      "sha256": "425de4b2eabe3cd6f75d47563f76f55a6ca2cea7b178d548074b3a8302ae6f04"
     }
   }
 }

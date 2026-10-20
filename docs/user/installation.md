@@ -91,6 +91,21 @@ milestones, além do setup, do documentador do sistema e das três skills
 auxiliares. Ela prepara os arquivos usados pelo agente, mas não cria uma spec
 de produto nem altera o código da aplicação.
 
+## Instalação no Windows e recuperação após falha
+
+No Windows, o diagnóstico procura executáveis com as extensões do PATHEXT,
+como git.exe. A instalação chama o entrypoint JavaScript do npx pelo Node,
+para preservar caminhos com espaços sem passar os argumentos por um shell.
+Se o npm estiver incompleto, repare sua instalação antes de tentar novamente.
+
+Quando o instalador delegado falha, o Specsfy tenta restaurar as regras,
+os templates, as skills e os locks gerenciados que existiam antes da operação.
+Se a restauração também falhar, a mensagem informa onde encontrar a cópia dos
+arquivos anteriores. Preserve essa pasta e o log antes de repetir o comando.
+
+A correção foi exercitada com simulação de plataforma. A confirmação em
+Windows nativo depende do teste no computador que apresentou a falha.
+
 ## Confira os arquivos instalados
 
 Na mesma raiz, liste o catálogo e consulte o progresso. O primeiro comando deve

@@ -4,6 +4,40 @@ Todas as mudanças relevantes do Specsfy CLI são registradas neste arquivo.
 
 ## [Unreleased]
 
+## [0.24.3] - 2026-10-20
+
+### Corrigido
+
+- Corrige a procura de executáveis pelo PATHEXT no Windows e chama o entrypoint JavaScript do npx pelo Node, preservando argumentos com espaços.
+- Restaura regras, templates, skills e locks gerenciados quando o instalador delegado falha.
+- Detecta stacks e arquivos de aplicação em subprojetos, excluindo dependências, skills instaladas e ambientes virtuais.
+- Preserva linhas com pipes escapados nas tabelas da stack.
+- Reconhece palavras Unicode nos validadores para aceitar palavras como MÉTODO e identificar alterações de índice que exigem migration.
+- Inclui testes .mjs e .cjs e limita a rastreabilidade aos testes declarados pela spec, sem selecionar arquivos com o mesmo sufixo.
+- Respeita specs Draft na verificação do repositório e aceita o título atual da seção de dependências no exemplo canônico.
+- Atualiza caminhos de research nas transições, permite reabrir specs concluídas e preserva a origem quando o destino está ocupado.
+- Corrige caminhos com espaços e a procura da raiz de projetos nos validadores.
+- Consulta o estado das migrations no banco de teste separado para distinguir operações históricas já executadas de operações pendentes.
+- Corrige a documentação gerada para excluir skills e dependências, reconhecer PHPUnit e identificar diagramas genéricos como exemplos.
+- Alinha o Node da CI ao mínimo 22.20.0 do CLI e atualiza as actions com SHAs fixos.
+
+### Validação
+
+- 121 testes do CLI, typecheck, build, executável e empacotamento local.
+- 19 testes de regressão em Node.js para as skills.
+- Windows validado por injeção de plataforma. A confirmação em Windows nativo e a integração com Laravel real permanecem pendentes.
+- Os testes integrados do projeto serão conferidos na CI antes da publicação da tag. Python não foi executado neste workspace.
+
+### Atualização
+
+- Atualize o CLI com `npm install --global @promovaweb/specsfy@0.24.3` e confirme `specsfy --version`.
+- As skills já instaladas em projetos consumidores precisam ser atualizadas separadamente. Execute `specsfy skills update --help` e preserve customizações locais antes de atualizar.
+- Os relatos permanecem abertos para confirmação dos autores no ambiente original.
+
+### Contribuições aproveitadas
+
+- Adapta contribuições dos PRs #7, #9, #12, #19, #22, #32, #38, #39, #40, #49 e #50, com testes e ajustes adicionais. A relação de autores e SHAs originais acompanha o commit desta versão.
+
 ## [0.24.2] - 2026-10-20
 
 ### Corrigido

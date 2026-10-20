@@ -1,8 +1,8 @@
 /** Diagnóstico compartilhado pelos fluxos de setup, update e upgrade. */
 
 import { constants } from "node:fs";
-import { access, stat } from "node:fs/promises";
-import { delimiter, join, resolve } from "node:path";
+import { access, readdir, stat } from "node:fs/promises";
+import { delimiter, dirname, extname, join, resolve } from "node:path";
 
 const MINIMUM_NODE_VERSION = [22, 20, 0] as const;
 
@@ -18,6 +18,8 @@ interface CheckOptions {
   nodeVersion?: string;
   npxOverride?: string;
   skillsLauncher?: string;
+  platform?: NodeJS.Platform;
+  pathext?: string;
 }
 
 /** Informa se a versão do runtime satisfaz o contrato do pacote. */
@@ -41,13 +43,17 @@ export async function resolveNpxSkillsCommand(
   path = process.env.PATH ?? "",
   override = process.env.SPECSFY_NPX_COMMAND,
   _launcher = process.argv[1],
+  platform: NodeJS.Platform = process.platform,
+  pathext = process.env.PATHEXT,
 ): Promise<string[] | undefined> {
   if (override) {
     const executable = resolve(override);
-    return (await isExecutable(executable)) ? [executable, "skills"] : undefined;
+    return (await isExecutable(executable, platform))
+      ? npxCommand(executable, platform)
+      : undefined;
   }
-  const npx = await findExecutable("npx", path);
-  return npx ? [npx, "skills"] : undefined;
+  const npx = await findExecutable("npx", path, platform, pathext);
+  return npx ? npxCommand(npx, platform) : undefined;
 }
 
 /** Verifica todos os recursos usados pelos comandos de instalação e atualização. */
@@ -57,12 +63,16 @@ export async function checkPrerequisites(
 ): Promise<PrerequisiteCheck[]> {
   const path = options.path ?? process.env.PATH ?? "";
   const nodeVersion = options.nodeVersion ?? process.versions.node;
-  const git = await findExecutable("git", path);
-  const npm = await findExecutable("npm", path);
+  const platform = options.platform ?? process.platform;
+  const pathext = options.pathext ?? process.env.PATHEXT;
+  const git = await findExecutable("git", path, platform, pathext);
+  const npm = await findExecutable("npm", path, platform, pathext);
   const skills = await resolveNpxSkillsCommand(
     path,
     options.npxOverride ?? process.env.SPECSFY_NPX_COMMAND,
     options.skillsLauncher ?? process.argv[1],
+    platform,
+    pathext,
   );
   const target = resolve(project);
   let projectOk = false;
@@ -123,18 +133,57 @@ export function assertPrerequisites(
   );
 }
 
-async function findExecutable(name: string, path: string): Promise<string | undefined> {
-  for (const directory of path.split(delimiter)) {
+/** Localiza arquivos de comandos, incluindo PATHEXT e caixa Windows. */
+async function findExecutable(
+  name: string,
+  path: string,
+  platform: NodeJS.Platform = process.platform,
+  pathext = process.env.PATHEXT,
+): Promise<string | undefined> {
+  const windows = platform === "win32";
+  const extensions = windows
+    ? [...(pathext ?? ".COM;.EXE;.BAT;.CMD").split(";").map((value) => value.trim()).filter((value) => /^\.[a-z0-9]+$/i.test(value)), ""]
+    : [""];
+  for (const item of path.split(windows ? ";" : delimiter)) {
+    const directory = windows ? item.replace(/^"(.*)"$/, "$1") : item;
     if (!directory) continue;
-    const executable = join(directory, name);
-    if (await isExecutable(executable)) return executable;
+    // A listagem preserva a caixa real mesmo nos testes Windows executados em Linux.
+    let entries: string[] = [];
+    if (windows) {
+      try { entries = await readdir(directory); } catch { continue; }
+    }
+    for (const extension of extensions) {
+      const filename = name + extension;
+      const actual = windows
+        ? entries.find((entry) => entry.toLowerCase() === filename.toLowerCase())
+        : filename;
+      if (!actual) continue;
+      const executable = join(directory, actual);
+      if (await isExecutable(executable, platform)) return executable;
+    }
   }
   return undefined;
 }
 
-async function isExecutable(path: string): Promise<boolean> {
+/** Executa o entrypoint do npm pelo Node para evitar shims batch e shell. */
+async function npxCommand(executable: string, platform: NodeJS.Platform): Promise<string[] | undefined> {
+  if (platform !== "win32" || /\.(exe|com)$/i.test(extname(executable))) {
+    return [executable, "skills"];
+  }
+  const entrypoint = join(dirname(executable), "node_modules", "npm", "bin", "npx-cli.js");
   try {
-    await access(path, constants.X_OK);
+    await access(entrypoint, constants.R_OK);
+    if ((await stat(entrypoint)).isFile()) return [process.execPath, entrypoint, "skills"];
+  } catch {
+    // Sem o entrypoint, o diagnóstico não pode aprovar um shim que execFile rejeita.
+  }
+  return undefined;
+}
+
+async function isExecutable(path: string, platform: NodeJS.Platform = process.platform): Promise<boolean> {
+  try {
+    if (!(await stat(path)).isFile()) return false;
+    await access(path, platform === "win32" ? constants.F_OK : constants.X_OK);
     return true;
   } catch {
     return false;

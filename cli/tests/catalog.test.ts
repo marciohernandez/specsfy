@@ -47,6 +47,17 @@ describe("catálogo", () => {
     ]);
   });
 
+  test("#25: descobre marcadores e dependências de subprojetos do Hub", async () => {
+    const project = await temporaryDirectory();
+    await mkdir(join(project, "manager/.storybook"), { recursive: true });
+    await writeFile(join(project, "manager/package.json"), JSON.stringify({ dependencies: { react: "^19" } }));
+    await mkdir(join(project, "node_modules/descartado"), { recursive: true });
+    await writeFile(join(project, "node_modules/descartado/package.json"), "{}");
+    expect((await catalog.detect(project)).map((entry) => entry.name)).toEqual([
+      "specsfy-specialist-react", "specsfy-specialist-ui-design",
+    ]);
+  });
+
   test("recusa namespace externo e ciclo", () => {
     expect(() => catalog.require("external")).toThrow("prefixo");
     const cyclic = Catalog.fromPayload({
