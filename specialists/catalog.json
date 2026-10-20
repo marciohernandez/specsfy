@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "skills": [
+    {"name":"specsfy-specialist-server-report","description":"Relatório de servidor: coleta somente leitura com Ansible, Docker, Swarm e disco.","category":"operations","tags":["server","report","ansible","docker"],"requires":["specsfy-specialist-ansible","specsfy-specialist-docker"],"detect":{"files":["ansible/inventory.yml"],"dependencies":[]}},
     {"name":"specsfy-specialist-laravel","description":"Laravel: domínio, HTTP, filas, autorização, dados e testes.","category":"backend","tags":["php","laravel","api"],"detect":{"files":["artisan","composer.json"],"dependencies":["laravel/framework"]}},
     {"name":"specsfy-specialist-laravel-package-manager","description":"Pacotes Composer Laravel: leitura GitHub, instalação autorizada e documentação em docs/packages.","category":"backend","tags":["php","laravel","composer","github","packages"],"requires":["specsfy-specialist-laravel"],"detect":{"files":["artisan"],"dependencies":["laravel/framework"]}},
     {"name":"specsfy-specialist-supabase","description":"Supabase: Postgres, Auth, RLS, Storage, Realtime e Edge Functions.","category":"backend","tags":["supabase","postgres","auth"],"detect":{"files":["supabase/config.toml"],"dependencies":["@supabase/supabase-js","supabase/supabase-php"]}},

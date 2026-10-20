@@ -61,6 +61,10 @@ nativas do Ansible também são aceitos. O guia de
 [operações de deploy](../docs/user/deploy-vault.md) explica cadastro,
 permissões, troca, remoção e migração dos scripts existentes.
 
+Para diagnóstico sem alterar o servidor, use
+`specsfy-specialist-server-report`. A coleta usa Ansible e registra containers,
+serviços Swarm, logs limitados e uso de disco em `server-reports/`, por host e data.
+
 Nenhuma skill deste módulo é instalada ou executada pela raiz do
 [`promovaweb/specsfy`](https://github.com/promovaweb/specsfy).
 

@@ -4,6 +4,13 @@ Todas as mudanças relevantes do Specsfy CLI são registradas neste arquivo.
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-10-20
+
+### Adicionado
+
+- Adiciona o especialista de relatório de servidor com coleta somente leitura por Ansible, diagnóstico Docker e Swarm e relatórios por host.
+- Registra o especialista no catálogo para instalação pelo CLI.
+
 ## [0.23.0] - 2026-09-15
 
 ### Adicionado
