@@ -215,43 +215,13 @@ resposta reconhecida para desconsiderar uma migration histórica.
 
 ### Contrato de comportamento
 
-Os cenários seguintes orientam as reproduções Node.js. O bloco Gherkin é uma
-referência de comportamento e não cria outro runner de testes.
+As reproduções verificam cinco comportamentos do consumidor:
 
-```gherkin
-# language: pt
-Funcionalidade: Preservar a integridade do consumidor ao operar o Specsfy
-
-  Cenário: Restaurar uma instalação que falhou durante a materialização
-    Dado um consumidor com instruções próprias e templates customizados
-    Quando o instalador delegado grava arquivos e termina com erro
-    Então as instruções e os locks anteriores permanecem íntegros
-    E as skills incompletas não ficam registradas como instaladas
-
-  Cenário: Manter a rastreabilidade da spec ao adicionar testes de outra entrega
-    Dado que a spec declara seus próprios arquivos de teste
-    Quando outra spec usa os mesmos identificadores em arquivos diferentes
-    Então os marcadores adicionais não alteram a cobertura da primeira spec
-
-  Cenário: Preservar uma célula que contém um separador escapado
-    Dado que a tabela de stack contém uma célula com pipe escapado
-    Quando a stack detectada é atualizada
-    Então a linha humana permanece na tabela
-    E outra execução não reescreve o arquivo
-
-  Cenário: Respeitar a fase preliminar de uma spec
-    Dado um consumidor que contém uma spec Draft estruturalmente válida
-    Quando a verificação global examina essa spec
-    Então usa a política de validação Draft
-    E mantém a validação estrita para os outros estados
-
-  Cenário: Distinguir uma migration histórica de uma remoção pendente
-    Dado um banco de teste separado e uma migration que remove coluna
-    Quando a consulta confirma que essa migration já foi aplicada
-    Então a remoção histórica não reprova o avanço de migrations novas
-    Mas uma remoção pendente continua recusada
-    E uma consulta sem resposta reconhecida mantém a execução pendente
-```
+- A falha de materialização restaura instruções, skills e locks anteriores.
+- Os IDs de testes de outra spec não alteram a cobertura da spec selecionada.
+- A atualização da stack preserva células com pipe escapado e é idempotente.
+- A verificação global respeita Draft e mantém os outros estados estritos.
+- A consulta de migrations só permite desconsiderar uma remoção histórica quando confirma que ela já foi aplicada. Saída vazia mantém a recusa histórica, e falha na consulta mantém o estado pendente.
 
 ## CI de preparação de versão
 

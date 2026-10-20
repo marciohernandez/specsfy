@@ -169,7 +169,7 @@ test('#25: setup confirma tecnologias dos repositórios filhos', (t) => {
 });
 
 
-for (const [migrationStatus, expected] of [['Ran', 'safe'], ['Pending', 'ignored'], ['unavailable', 'pending']]) {
+for (const [migrationStatus, expected] of [['Ran', 'safe'], ['Pending', 'ignored'], ['unavailable', 'pending'], ['empty', 'ignored']]) {
   test('#46: migration histórica com estado ' + migrationStatus + ' resulta em ' + expected, (t) => {
     const root = temporary(t);
     put(root, 'artisan', '<?php');
@@ -178,7 +178,7 @@ for (const [migrationStatus, expected] of [['Ran', 'safe'], ['Pending', 'ignored
     put(root, 'database/migrations/2026_01_01_000001_remove_legacy.php', '<?php public function up() { Schema::table("users", fn ($table) => $table->dropColumn("legacy")); } public function down() {}');
     const php = put(root, 'bin/php', '#!/usr/bin/env node\n' + (migrationStatus === 'unavailable'
       ? 'process.exit(2);\n'
-      : 'if(process.argv.slice(2).join(" ")!=="artisan migrate:status --env=testing --no-ansi")process.exit(4);console.log("  2026_01_01_000001_remove_legacy ........ [1] ' + migrationStatus + '");\n'));
+      : migrationStatus === 'empty' ? 'process.exit(0);\n' : 'if(process.argv.slice(2).join(" ")!=="artisan migrate:status --env=testing --no-ansi")process.exit(4);console.log("  2026_01_01_000001_remove_legacy ........ [1] ' + migrationStatus + '");\n'));
     chmodSync(php, 0o755);
     const result = spawnSync(process.execPath, [script('specsfy-setup', 'check_database_safety'), '--project', root, '--command', 'php artisan migrate --env=testing', '--json'], {
       encoding: 'utf8', env: { ...process.env, PATH: join(root, 'bin') + delimiter + process.env.PATH },

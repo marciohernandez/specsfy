@@ -154,6 +154,11 @@ async function inspectLaravelMigrations() {
     errors.push("não foi possível consultar o estado das migrations no banco de teste");
     return;
   }
+  // Uma consulta sem estados mantém a recusa histórica das migrations destrutivas.
+  if (!status.stdout.trim()) {
+    ignored.push("a consulta não informou estados; as migrations que podem apagar registros permanecem recusadas");
+    return;
+  }
   for (const path of destructive) {
     const name = basename(path, ".php");
     const line = status.stdout.split(/\r?\n/u).find((row) => row.trimStart().startsWith(name + " "));

@@ -24,7 +24,7 @@ Todas as mudanças relevantes do Specsfy CLI são registradas neste arquivo.
 ### Validação
 
 - 121 testes do CLI, typecheck, build, executável e empacotamento local.
-- 19 testes de regressão em Node.js para as skills.
+- 20 testes de regressão em Node.js para as skills.
 - Windows validado por injeção de plataforma. A confirmação em Windows nativo e a integração com Laravel real permanecem pendentes.
 - Os testes integrados do projeto serão conferidos na CI antes da publicação da tag. Python não foi executado neste workspace.
 
