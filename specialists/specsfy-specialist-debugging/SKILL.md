@@ -86,6 +86,9 @@ description: Diagnosticar bugs, regressões, falhas intermitentes e problemas de
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-technical-research` confirma comportamento externo,
   errata ou compatibilidade quando a causa depende de documentação primária.
 - `$specsfy-specialist-observability` para instrumentar produção quando o

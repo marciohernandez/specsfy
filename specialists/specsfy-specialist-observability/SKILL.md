@@ -96,6 +96,9 @@ description: "Projetar e revisar logs, métricas, traces, correlação, SLOs, al
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-debugging` consome os sinais para isolar causa e pede
   instrumentação adicional quando a evidência é insuficiente.
 - `$specsfy-specialist-docker` e `$specsfy-specialist-docker-swarm` expõem

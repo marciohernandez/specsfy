@@ -168,6 +168,9 @@ Editorial Compartilhado aplicável ao projeto consumidor.
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-versioning` governa a versão do sistema do usuário.
 - `$specsfy-specialist-debian-server` define o estado base do host.
 - `$specsfy-specialist-docker` prepara e publica a imagem.

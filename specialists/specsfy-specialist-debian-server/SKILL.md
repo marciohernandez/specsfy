@@ -82,6 +82,9 @@ description: Administrar servidores Debian para aplicações e clusters com APT,
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-deploy` coordena a preparação completa do servidor;
   este especialista define o estado Debian do host.
 - `$specsfy-specialist-ansible` automatiza e repete a configuração do host;

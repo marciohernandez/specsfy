@@ -117,6 +117,9 @@ description: Criar, revisar e depurar imagens Docker e ambientes Compose com bui
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-deploy` coordena a entrega completa; esta skill cuida
   somente da imagem e do Compose de desenvolvimento.
 - `$specsfy-specialist-versioning` prepara `SEMVER` e confere a identidade da

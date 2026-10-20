@@ -114,6 +114,9 @@ description: "Projetar, implantar e operar stacks Docker Swarm com serviços, ov
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-deploy` coordena servidor, imagem, Ansible e publicação
   da stack; esta skill governa somente o Swarm.
 - `$specsfy-specialist-versioning` prepara `SEMVER` e confere a versão usada

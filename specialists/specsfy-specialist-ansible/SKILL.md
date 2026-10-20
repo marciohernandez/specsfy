@@ -128,6 +128,9 @@ Compartilhado aplicável ao projeto consumidor.
 
 ## Skills relacionadas
 
+- `$specsfy-specialist-server-report` reúne logs, serviços e uso de disco
+  em relatórios por host, com coleta somente leitura via Ansible.
+
 - `$specsfy-specialist-deploy` coordena a automação completa do servidor; esta
   skill cuida das roles e do playbook Ansible.
 - `$specsfy-specialist-versioning` mantém `SEMVER` alinhado à imagem e aos

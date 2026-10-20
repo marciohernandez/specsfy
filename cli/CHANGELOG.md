@@ -4,6 +4,13 @@ Todas as mudanças relevantes do Specsfy CLI são registradas neste arquivo.
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-10-20
+
+### Corrigido
+
+- Inclui o novo especialista no conjunto esperado pelos testes do catálogo.
+- Completa as referências recíprocas entre o relatório de servidor e os especialistas de plataforma e diagnóstico.
+
 ## [0.24.0] - 2026-10-20
 
 ### Adicionado

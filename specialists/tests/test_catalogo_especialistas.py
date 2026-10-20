@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_SKILLS = {
+    "specsfy-specialist-server-report",
     "specsfy-specialist-ansible",
     "specsfy-specialist-application-security",
     "specsfy-specialist-astro",
