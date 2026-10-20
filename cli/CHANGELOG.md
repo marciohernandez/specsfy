@@ -4,6 +4,13 @@ Todas as mudanças relevantes do Specsfy CLI são registradas neste arquivo.
 
 ## [Unreleased]
 
+## [0.24.2] - 2026-10-20
+
+### Corrigido
+
+- Recompila o executável do CLI e seu manifesto para corresponder à versão pública do Specsfy.
+- Mantém o catálogo de relatório de servidor e suas referências recíprocas.
+
 ## [0.24.1] - 2026-10-20
 
 ### Corrigido
